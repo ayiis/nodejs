@@ -33,7 +33,7 @@ var threadFunc = function(Authorization) {
         }
         if (--totalCount === 0) {
             consoleLog('------', true);
-            consoleLog(['Total Seconds:', ((new Date()).getTime() - startTime) / 1000].join(''), true);
+            consoleLog(['Cost time: ', ((new Date()).getTime() - startTime) / 1000].join(''), true);
         }
         --nowThread;
     });
@@ -77,7 +77,7 @@ var main = function() {
                 consoleLog('File of usname or passwd is empty.', true);
                 return 1;
             } else {
-                consoleLog(['Total Count:', totalCount].join(''), true);
+                consoleLog(['Total count: ', totalCount].join(''), true);
                 consoleLog('------', true);
             }
             unameList.forEach(function(u, m) {
