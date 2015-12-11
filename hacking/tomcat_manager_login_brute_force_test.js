@@ -64,7 +64,7 @@ var main = function() {
     var usnameFile = process.argv[3];
     var passwdFile = process.argv[4];
     if (!options.url || !usnameFile || !passwdFile) {
-        consoleLog('Usage: node this.js http://192.168.133.133:8080/manager/html usname.txt passwd.txt', true);
+        consoleLog('Usage: node this.js http://127.0.0.1:8080/manager/html usname.txt passwd.txt', true);
         return 1;
     }
     readFile(usnameFile, function(uData) {
