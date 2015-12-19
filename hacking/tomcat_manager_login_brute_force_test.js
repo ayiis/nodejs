@@ -3,29 +3,37 @@ var request = require('request');
 
 var counter = 0;
 var totalCount = 0;
-var maxThread = 16;
-var nowThread = 0;
 var authorizationList = [];
 var startTime = (new Date()).getTime();
 var options = {
     url: null,
     headers: {}
 }
+var maxThread = 16;
 var consoleLength = 80;
 
 var consoleLog = function(str, newLine) {
     var ss = [];
-    ss[consoleLength - str.length] = '';
-    process.stdout.write(str + ss.join(' ') + (newLine ? '\r\n' : '\033[0G'));
+    ss[consoleLength - str.length] = newLine ? '\r\n' : '\033[0G';  // hacked: change line in WINDOWS
+    process.stdout.write(str + ss.join(' '));
 }
 
 var readFile = function(fp, cb) {
     fs.readFile(fp, function(err, data) {
-        cb(data);
+        return cb(data);
     });
 };
 
-var threadFunc = function(Authorization) {
+var threadFunc = function() {
+    var Authorization = authorizationList[--totalCount];
+    if (totalCount < 0) {
+        if (totalCount === 0 - maxThread) {
+            consoleLog('------', true);
+            consoleLog(['Cost time: ', ((new Date()).getTime() - startTime) / 1000].join(''), true);
+            return 1;
+        }
+        return 0;
+    }
     options.headers.Authorization = Authorization;
     request.get(options, function(err, data) {
         if (data.statusCode != 401) {
@@ -35,19 +43,13 @@ var threadFunc = function(Authorization) {
             consoleLog('------', true);
             consoleLog(['Cost time: ', ((new Date()).getTime() - startTime) / 1000].join(''), true);
         }
-        --nowThread;
+        return threadFunc();
     });
 }
 
 var callThreadFunc = function() {
-    if (nowThread >= maxThread) {
-        return setTimeout(callThreadFunc, 8);
-    }
-    ++nowThread;
-    var Authorization = authorizationList.pop();
-    if (Authorization !== undefined) {
-        threadFunc(Authorization);
-        callThreadFunc();
+    for (var i = maxThread; i >= 0; i--) {
+        setTimeout(threadFunc, 8 * i);
     }
 }
 
